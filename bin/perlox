@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+
+=encoding utf8
+=head1 Brief description
+
+TODO
+
+=cut
+
+use v5.24;
+use strict;
+use warnings;
+use utf8;
+use lib::abs '../lib';
+
+use Syntax::Keyword::Match;
+use Try::Tiny qw(try catch);
+use Readonly qw(Readonly);
+
+use Perlox::Interpreter ();
+use Perlox::CLI qw(
+    show_file_opening_error
+    show_help_message
+);
+
+Readonly::Hash my %EXIT_CODES => (
+    OK => 0,
+    TOO_MANY_ARGUMENTS => 64,
+);
+
+my $interpreter = Perlox::Interpreter->new();
+
+match (my $args_count = scalar(@ARGV) : ==) {
+    case (0) {
+        $interpreter->run_repl();
+    } case (1) {
+        try {
+            $interpreter->run_from_file($ARGV[0]);
+        } catch {
+            # Use $! instead of $_ for the sake of brevity,
+            # $_ additionally includes the line number in a script
+            show_file_opening_error($ARGV[0], $!);
+        }
+    }
+    case if ($args_count > 1) {
+        show_help_message();
+        exit($EXIT_CODES{TOO_MANY_ARGUMENTS});
+    }
+}
+
+1;
