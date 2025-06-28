@@ -18,10 +18,6 @@ use Try::Tiny qw(try catch);
 use Readonly qw(Readonly);
 
 use Perlox::Interpreter ();
-use Perlox::CLI qw(
-    show_file_opening_error
-    show_help_message
-);
 
 Readonly::Hash my %EXIT_CODES => (
     OK => 0,
@@ -30,22 +26,29 @@ Readonly::Hash my %EXIT_CODES => (
 
 my $interpreter = Perlox::Interpreter->new();
 
-match (my $args_count = scalar(@ARGV) : ==) {
-    case (0) {
-        $interpreter->run_repl();
-    } case (1) {
-        try {
+try {
+    match (my $args_count = scalar(@ARGV) : ==) {
+        case (0) {
+            $interpreter->run_repl();
+        } case (1) {
             $interpreter->run_from_file($ARGV[0]);
-        } catch {
-            # Use $! instead of $_ for the sake of brevity,
-            # $_ additionally includes the line number in a script
-            show_file_opening_error($ARGV[0], $!);
+        } case if ($args_count > 1) {
+            Perlox::CLI::show_help_message();
+            exit($EXIT_CODES{TOO_MANY_ARGUMENTS});
         }
     }
-    case if ($args_count > 1) {
-        show_help_message();
-        exit($EXIT_CODES{TOO_MANY_ARGUMENTS});
+} catch {
+    # TODO Reporter module or smth similar
+    match ($_ : isa) {
+        case (Perlox::Interpreter::FileReadException) {
+            say($_->error());
+        } case (Perlox::Interpreter::Scanner::UnexpectedCharacterException) {
+            say(sprintf(
+                '%s, at line %d, column: %d',
+                $_->error(), $_->line(), $_->column(),
+            ));
+        }
     }
-}
+};
 
 1;
