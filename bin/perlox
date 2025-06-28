@@ -3,7 +3,7 @@
 =encoding utf8
 =head1 Brief description
 
-TODO
+    Lox language implementation written in Perl.
 
 =cut
 
@@ -43,10 +43,12 @@ try {
         case (Perlox::Interpreter::FileReadException) {
             say($_->error());
         } case (Perlox::Interpreter::Scanner::UnexpectedCharacterException) {
-            say(sprintf(
-                '%s, at line %d, column: %d',
-                $_->error(), $_->line(), $_->column(),
-            ));
+            foreach my $unexpected_character_error ($_->errors->@*) {
+                say(sprintf(
+                    '%s, at line %d, column: %d',
+                    @{$unexpected_character_error}{qw(error line column)},
+                ));
+            }
         }
     }
 };

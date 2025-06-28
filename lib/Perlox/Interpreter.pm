@@ -58,8 +58,9 @@ sub run_from_file($self, $path_to_script) {
 sub run_from_string($self, $source_string) {
     my $tokens = $self->{scanner}->get_tokens($source_string);
 
-    use Data::Dumper;
-    print Dumper $tokens;
+    foreach my $token (@$tokens) {
+        print $token, "\n";
+    }
 }
 
 sub run_repl($self) {

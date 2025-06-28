@@ -22,7 +22,7 @@ use Exception::Class (
     Perlox::Interpreter::Scanner::UnexpectedCharacterException => {
         isa => 'Perlox::Interpreter::Scanner::Exception',
         description => 'Scanner faced an unknown character',
-        fields => ['line', 'column', 'unexpected_character'],
+        fields => ['errors'],
     },
 );
 

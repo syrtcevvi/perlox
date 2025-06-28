@@ -44,6 +44,7 @@ sub _init($self) {
                     end => undef,
                 },
             },
+            errors => [],
 
             source_code_chars => [],
             tokens => [],
@@ -60,6 +61,12 @@ sub get_tokens($self, $source_code) {
 
     while (!$self->_is_eof()) {
         $self->_scan_token();
+    }
+
+    if (scalar($self->{errors}->@*)) {
+        Perlox::Interpreter::Scanner::UnexpectedCharacterException->throw(
+            errors => $self->{errors},
+        );
     }
 
     $self->_save_current_token(TokenType::EOF);
@@ -86,11 +93,14 @@ sub _scan_token($self) {
         case ('*') { $self->_save_current_token(TokenType::STAR); }
         case ("\n") { $self->_process_new_line(); }
         default {
-            Perlox::Interpreter::Scanner::UnexpectedCharacterException->throw(
-                error => sprintf('Unexpected character: \'%s\'', $current_char),
-                unexpected_character => $current_char,
-                column => $self->{current_column} - 1,
-                line => $self->{current_line},
+            push(
+                $self->{errors}->@*,
+                {
+                    error => sprintf('Unexpected character: \'%s\'', $current_char),
+                    unexpected_character => $current_char,
+                    column => $self->{current_column} - 1,
+                    line => $self->{current_line},
+                },
             );
         }
     }
