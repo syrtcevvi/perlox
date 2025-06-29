@@ -10,6 +10,7 @@ TODO
 use v5.24;
 use strict;
 use warnings;
+use utf8;
 use experimental 'signatures';
 
 use Exporter 'import';

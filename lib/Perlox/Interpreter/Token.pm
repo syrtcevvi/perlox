@@ -10,6 +10,7 @@ package Perlox::Interpreter::Token;
 use v5.24;
 use strict;
 use warnings;
+use utf8;
 use lib::abs '../..';
 use experimental 'signatures';
 

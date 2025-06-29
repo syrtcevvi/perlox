@@ -11,10 +11,10 @@ use v5.24;
 use strict;
 use warnings;
 use utf8;
+use open qw(:std :utf8);
 use lib::abs '../lib';
 
 use Syntax::Keyword::Match;
-use Try::Tiny qw(try catch);
 use Readonly qw(Readonly);
 
 use Perlox::Interpreter ();
@@ -26,31 +26,15 @@ Readonly::Hash my %EXIT_CODES => (
 
 my $interpreter = Perlox::Interpreter->new();
 
-try {
-    match (my $args_count = scalar(@ARGV) : ==) {
-        case (0) {
-            $interpreter->run_repl();
-        } case (1) {
-            $interpreter->run_from_file($ARGV[0]);
-        } case if ($args_count > 1) {
-            Perlox::CLI::show_help_message();
-            exit($EXIT_CODES{TOO_MANY_ARGUMENTS});
-        }
+match (my $args_count = scalar(@ARGV) : ==) {
+    case (0) {
+        $interpreter->run_repl();
+    } case (1) {
+        $interpreter->run_from_file($ARGV[0]);
+    } case if ($args_count > 1) {
+        Perlox::CLI::show_help_message();
+        exit($EXIT_CODES{TOO_MANY_ARGUMENTS});
     }
-} catch {
-    # TODO Reporter module or smth similar
-    match ($_ : isa) {
-        case (Perlox::Interpreter::FileReadException) {
-            say($_->error());
-        } case (Perlox::Interpreter::Scanner::UnexpectedCharacterException) {
-            foreach my $unexpected_character_error ($_->errors->@*) {
-                say(sprintf(
-                    '%s, at line %d, column: %d',
-                    @{$unexpected_character_error}{qw(error line column)},
-                ));
-            }
-        }
-    }
-};
+}
 
 1;

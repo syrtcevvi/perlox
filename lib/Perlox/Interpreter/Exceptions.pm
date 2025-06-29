@@ -11,9 +11,6 @@ use Exception::Class (
     Perlox::Interpreter::Exception => {
         description => 'base exception class for interpreter-related exceptions'
     },
-    Perlox::Interpreter::FileReadException => {
-        fields => ['path_to_file'],
-    },
 
     Perlox::Interpreter::Scanner::Exception => {
         isa => 'Perlox::Interpreter::Exception',

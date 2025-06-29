@@ -10,9 +10,11 @@ TODO
 use v5.24;
 use strict;
 use warnings;
+use utf8;
 use experimental 'signatures';
 use lib::abs '../';
 
+use Syntax::Keyword::Match;
 use Path::Class::File ();
 use Readonly qw(Readonly);
 use Try::Tiny qw(try catch);
@@ -43,20 +45,24 @@ sub run_from_file($self, $path_to_script) {
     } catch {
         # Use $! instead of $_ for the sake of brevity,
         # $_ additionally includes the line number in a script
-        Perlox::Interpreter::FileReadException->throw(
-            error => sprintf(
-                'Unable to open file "%s" for reading: %s',
-                $path_to_script, $!
-            ),
-            path_to_file => $path_to_script,
-        );
+        die(sprintf(
+            'Unable to open file "%s" for reading: %s' . "\n",
+            $path_to_script, $!
+        ));
     };
-     
+
     $self->run_from_string($script_content);
 }
 
 sub run_from_string($self, $source_string) {
-    my $tokens = $self->{scanner}->get_tokens($source_string);
+    my $tokens;
+    try {
+        $tokens = $self->{scanner}->get_tokens($source_string);
+        # TODO parser, tree-walking execution
+    } catch {
+        $self->_handle_exceptions($_);
+        return;
+    };
 
     foreach my $token (@$tokens) {
         print $token, "\n";
@@ -74,7 +80,33 @@ sub run_repl($self) {
             show_repl_exit_message();
             return;
         }
+
         $self->run_from_string($source_code_line);
+
+        # Clear the interpreter scanner state
+        $self->_reinit_scanner();
+    }
+}
+
+sub _reinit($self) {
+    # TODO
+}
+
+sub _reinit_scanner($self) {
+    $self->{scanner} = Perlox::Interpreter::Scanner->new();
+}
+
+sub _handle_exceptions($self, $exception) {
+    # TODO Reporter module or smth similar
+    match ($exception : isa) {
+        case (Perlox::Interpreter::Scanner::UnexpectedCharacterException) {
+            foreach my $unexpected_character_error ($_->errors->@*) {
+                say(sprintf(
+                    '%s, at line %d, column: %d',
+                    @{$unexpected_character_error}{qw(error line column)},
+                ));
+            }
+        }
     }
 }
 
