@@ -107,6 +107,9 @@ sub _handle_exceptions($self, $exception) {
                 ));
             }
         }
+        default {
+            say $_;
+        }
     }
 }
 

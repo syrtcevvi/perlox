@@ -156,6 +156,7 @@ sub _parse_string($self) {
 
     if ($self->_is_eof()) {
         $self->_save_error('You probably missed the trailing quote symbol "');
+        return;
     }
 
     # Consume the trailing quote character
@@ -164,7 +165,26 @@ sub _parse_string($self) {
 }
 
 sub _parse_number($self) {
+    while (
+        _is_digit($self->_peek_next_character())
+        && !$self->_is_eof()
+    ) {
+        $self->_consume_next_character();
+    }
 
+    unless (
+        $self->_is_eof()
+        || _is_whitespace($self->_peek_next_character())
+        || $self->_peek_next_character() eq "\n"
+    ) {
+        $self->_save_error(sprintf(
+            'Unexpected character after number: %s',
+            $self->_peek_next_character(),
+        ));
+        return;
+    }
+
+    $self->_save_current_token(TokenType::NUMBER);
 }
 
 sub _save_current_token($self, $token_type) {
@@ -173,18 +193,19 @@ sub _save_current_token($self, $token_type) {
         $value = join('', @{$self->{source}}[
             $self->{token}{span}{start} + 1 .. $self->{token}{span}{end} - 1
         ]);
+    } elsif ($token_type == TokenType::NUMBER) {
+        $value = join('', @{$self->{source}}[
+            $self->{token}{span}{start}  .. $self->{token}{span}{end}
+        ]);
     }
 
     push(
         $self->{tokens}->@*,
         Perlox::Interpreter::Token->new(
             type => $token_type,
-            # It matters to store a lexeme value for some token types (string, numbers)
+            # It makes sense to store a lexeme value for some token types (string, numbers)
             defined($value)
                 ? (value => $value) : (),
-            # FIXME: It doesn't necessary to store metadata for each token
-            span => clone($self->{token}{span}),
-            line => $self->{line},
         ),
     );
 
@@ -245,6 +266,8 @@ sub _save_error($self, $error) {
             line => $self->{line},
         },
     );
+
+    @{$self->{token}{span}}{qw(start end)} = (undef, undef);
 }
 
 sub _is_digit($maybe_digit) {

@@ -86,6 +86,8 @@ sub _to_string {
     my $string_representation = $TOKEN_TYPE_TO_STRING{$self->{type}};
     if ($self->{type} == TokenType::STRING) {
         $string_representation .= ' "' . $self->{value} . '"';
+    } elsif ($self->{type} == TokenType::NUMBER) {
+        $string_representation .= ' ' . $self->{value};
     }
 
     return $string_representation;
