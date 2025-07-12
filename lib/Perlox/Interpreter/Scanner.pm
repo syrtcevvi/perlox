@@ -11,11 +11,13 @@ package Perlox::Interpreter::Scanner;
 use v5.24;
 use strict;
 use warnings;
+use utf8;
 use experimental qw(signatures);
 use lib::abs '../../';
 
 use Syntax::Keyword::Match;
 use Clone 'clone';
+use List::Util qw(any);
 
 use Perlox::Interpreter::Exceptions ();
 use Perlox::Interpreter::Token ();
@@ -34,20 +36,19 @@ sub _init($self) {
     %$self = (
         %$self,
         (
-            source_code_offset => 0,
-            current_line => 1,
-            current_column => 1,
+            source => [],
+            offset => 0,
+            line => 1,
 
-            current_lexeme => {
+            errors => [],
+
+            tokens => [],
+            token => {
                 span => {
-                    start_column => undef,
+                    start => undef,
                     end => undef,
                 },
             },
-            errors => [],
-
-            source_code_chars => [],
-            tokens => [],
         )
     );
 
@@ -55,12 +56,17 @@ sub _init($self) {
 }
 
 =head2 get_tokens($self, $source_code) -> []
+
+    Returns the recognized tokens from the $source_code.
+
+    In case of lexical errors, throws the exception Perlox::Interpreter::Scanner::UnexpectedCharacterException.
+
 =cut
 sub get_tokens($self, $source_code) {
-    $self->{source_code_chars} = [split(//, $source_code)];
+    $self->{source} = [split(//, $source_code)];
 
     while (!$self->_is_eof()) {
-        $self->_scan_token();
+        $self->_get_next_token();
     }
 
     if (scalar($self->{errors}->@*)) {
@@ -77,10 +83,10 @@ sub get_tokens($self, $source_code) {
     return $tokens;
 }
 
-sub _scan_token($self) {
-    my $current_char = $self->_get_next_char();
+sub _get_next_token($self) {
+    my $next_character = $self->_consume_next_character();
 
-    match ($current_char: eq) {
+    match ($next_character: eq) {
         case ('(') { $self->_save_current_token(TokenType::LEFT_PAREN); }
         case (')') { $self->_save_current_token(TokenType::RIGHT_PAREN); }
         case ('{') { $self->_save_current_token(TokenType::LEFT_BRACE); }
@@ -91,57 +97,165 @@ sub _scan_token($self) {
         case ('+') { $self->_save_current_token(TokenType::PLUS); }
         case (';') { $self->_save_current_token(TokenType::SEMICOLON); }
         case ('*') { $self->_save_current_token(TokenType::STAR); }
-        case ("\n") { $self->_process_new_line(); }
-        default {
-            push(
-                $self->{errors}->@*,
-                {
-                    error => sprintf('Unexpected character: \'%s\'', $current_char),
-                    unexpected_character => $current_char,
-                    column => $self->{current_column} - 1,
-                    line => $self->{current_line},
-                },
+        case ('!') {
+            $self->_save_current_token(
+                $self->_peek_next_character() eq '='
+                    ? TokenType::BANG_EQUAL : TokenType::BANG
             );
+        }
+        case ('=') {
+            $self->_save_current_token(
+                $self->_peek_next_character() eq '='
+                    ? TokenType::EQUAL_EQUAL : TokenType::EQUAL
+            );
+        }
+        case ('<') {
+            $self->_save_current_token(
+                $self->_peek_next_character() eq '='
+                    ? TokenType::LESS_EQUAL : TokenType::LESS
+            );
+        }
+        case ('>') {
+            $self->_save_current_token(
+                $self->_peek_next_character() eq '='
+                    ? TokenType::GREATER_EQUAL : TokenType::GREATER
+            );
+        }
+        case ('/') {
+            if ($self->_peek_next_character() eq '/') {
+                while (
+                    $self->_peek_next_character() ne "\n"
+                    && !$self->_is_eof()
+                ) {
+                    $self->_skip_next_character();
+                }
+            } else {
+                $self->_save_current_token(TokenType::SLASH);
+            }
+        }
+        case ('"') { $self->_parse_string(); }
+        case if (_is_digit($next_character)) { $self->_parse_number(); }
+        case ("\n") { $self->_process_new_line(); }
+        case if (_is_whitespace($next_character)) {}
+        default {
+            $self->_save_error(sprintf('Unexpected character: \'%s\'', $next_character));
         }
     }
 }
 
+sub _parse_string($self) {
+    while (
+        $self->_peek_next_character() ne '"'
+        && !$self->_is_eof()
+    ) {
+        $self->_consume_next_character();
+        if ($self->_peek_next_character() eq "\n") {
+            $self->{line}++;
+        }
+    }
+
+    if ($self->_is_eof()) {
+        $self->_save_error('You probably missed the trailing quote symbol "');
+    }
+
+    # Consume the trailing quote character
+    $self->_consume_next_character();
+    $self->_save_current_token(TokenType::STRING);
+}
+
+sub _parse_number($self) {
+
+}
+
 sub _save_current_token($self, $token_type) {
+    my $value;
+    if ($token_type == TokenType::STRING) {
+        $value = join('', @{$self->{source}}[
+            $self->{token}{span}{start} + 1 .. $self->{token}{span}{end} - 1
+        ]);
+    }
+
     push(
         $self->{tokens}->@*,
         Perlox::Interpreter::Token->new(
-            token_type => $token_type,
-            span => clone($self->{current_lexeme}{span}),
-            line => $self->{current_line},
+            type => $token_type,
+            # It matters to store a lexeme value for some token types (string, numbers)
+            defined($value)
+                ? (value => $value) : (),
+            # FIXME: It doesn't necessary to store metadata for each token
+            span => clone($self->{token}{span}),
+            line => $self->{line},
         ),
     );
-    $self->{current_lexeme}{span} = {
-        start_column => undef,
-        end => undef,
-    };
+
+    @{$self->{token}{span}}{qw(start end)} = (undef, undef);
 
     return;
 }
 
-sub _get_next_char($self) {
-    my $next_char = $self->{source_code_chars}[$self->{source_code_offset}++];
+sub _consume_next_character($self) {
+    my $next_character = $self->{source}[$self->{offset}];
 
-    my $previous_column = $self->{current_column}++;
-    if (!defined($self->{current_lexeme}{span}{start_column})) {
-        $self->{current_lexeme}{span}{start_column} = $previous_column;
+    if (_is_whitespace($next_character)) {
+        $self->_skip_next_character();
+    } else {
+        if (!defined($self->{token}{span}{start})) {
+            $self->{token}{span}{start} = $self->{offset};
+        }
+        $self->{token}{span}{end} = $self->{offset}++;
     }
-    $self->{current_lexeme}{span}{end} = $previous_column;
 
-    return $next_char;
+    return $next_character;
+}
+
+sub _skip_next_character($self) {
+    $self->{offset}++;
 }
 
 sub _process_new_line($self) {
-    $self->{current_line}++;
-    $self->{current_column} = 1;
+    $self->{line}++;
+    @{$self->{token}{span}}{qw(start end)} = (undef, undef);
+}
+
+sub _clear_token($self) {
+    $self->{token} = {
+        span => {
+            start => undef,
+            end => undef,
+        },
+        value => undef,
+    };
+}
+
+sub _peek_next_character($self) {
+    return $self->{source}[$self->{offset}] // '';
 }
 
 sub _is_eof($self) {
-    return $self->{source_code_offset} >= scalar($self->{source_code_chars}->@*);
+    return $self->{offset} >= scalar($self->{source}->@*);
+}
+
+sub _save_error($self, $error) {
+    push(
+        $self->{errors}->@*,
+        {
+            error => $error,
+            # Column value is 1-based (like in an IDE), so it's okay to pass offset as-is
+            column => $self->{offset},
+            line => $self->{line},
+        },
+    );
+}
+
+sub _is_digit($maybe_digit) {
+    return $maybe_digit =~ m/^\d$/;
+}
+
+sub _is_whitespace($maybe_whitespace) {
+    $maybe_whitespace //= '';
+    return any {
+        $maybe_whitespace eq $_
+    } (' ', "\r", "\t", "\f");
 }
 
 1;

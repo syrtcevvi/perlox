@@ -47,9 +47,9 @@ Readonly::Hash my %TOKEN_TYPE_TO_STRING => (
     TokenType::LESS => '<',
     TokenType::LESS_EQUAL => '<=',
 
-    TokenType::IDENTIFIER => 'id: ',
-    TokenType::STRING => '',
-    TokenType::NUMBER => '-',
+    TokenType::IDENTIFIER => 'id:',
+    TokenType::STRING => 'str:',
+    TokenType::NUMBER => 'num:',
 
     TokenType::AND => 'and',
     TokenType::CLASS => 'class',
@@ -73,15 +73,22 @@ Readonly::Hash my %TOKEN_TYPE_TO_STRING => (
 
 sub new($class, %args) {
     return bless({
-        token_type => $args{token_type},
+        type => $args{type},
         span => $args{span},
         line => $args{line},
+        value => $args{value},
     }, $class);
 }
 
 sub _to_string {
     my ($self) = @_;
-    return $TOKEN_TYPE_TO_STRING{$self->{token_type}};
+
+    my $string_representation = $TOKEN_TYPE_TO_STRING{$self->{type}};
+    if ($self->{type} == TokenType::STRING) {
+        $string_representation .= ' "' . $self->{value} . '"';
+    }
+
+    return $string_representation;
 }
 
 1;
