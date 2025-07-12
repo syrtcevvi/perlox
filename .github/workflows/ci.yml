@@ -20,4 +20,4 @@ jobs:
       - name: Check Perl files
         run: |
           # Traverse lib directory recursively and run perl -wc on each file
-          find . -path "./lib/*" -type f | xargs -0 -I {} perl -wc {}
+          find . -path "./lib/*" -type f -print0 | xargs -0 -I {} perl -wc {}
