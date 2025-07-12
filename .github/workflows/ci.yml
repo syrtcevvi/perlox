@@ -1,0 +1,23 @@
+name: Check Perl files
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  compile-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install perl packages
+        run: ./packages.sh
+      
+      - name: Check Perl files
+        run: |
+          # Traverse lib directory recursively and run perl -wc on each file
+          find . -path "./lib/*" -type f -print0 | xargs -0 -I {} perl -wc {}
