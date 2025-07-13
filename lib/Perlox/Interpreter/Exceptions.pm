@@ -15,10 +15,6 @@ use Exception::Class (
     Perlox::Interpreter::Scanner::Exception => {
         isa => 'Perlox::Interpreter::Exception',
         description => 'base exception class for scanner-related exceptions',
-    },
-    Perlox::Interpreter::Scanner::UnexpectedCharacterException => {
-        isa => 'Perlox::Interpreter::Scanner::Exception',
-        description => 'Scanner faced an unknown character',
         fields => ['errors'],
     },
 );

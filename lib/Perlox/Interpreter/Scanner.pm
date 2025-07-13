@@ -23,7 +23,7 @@ use Perlox::Interpreter::Exceptions ();
 use Perlox::Interpreter::Token ();
 BEGIN {
     use Perlox::Interpreter::Token::Type ();
-    # Allows us to save some typing when working with TokenTypes
+    # Allows us to save some typing when working with token types
     *TokenType:: = *Perlox::Interpreter::Token::Type::;
 };
 
@@ -35,21 +35,20 @@ sub new($class) {
 sub _init($self) {
     %$self = (
         %$self,
-        (
-            source => [],
-            offset => 0,
-            line => 1,
 
-            errors => [],
+        source => [],
+        offset => 0,
+        line => 1,
 
-            tokens => [],
-            token => {
-                span => {
-                    start => undef,
-                    end => undef,
-                },
+        errors => [],
+
+        tokens => [],
+        token => {
+            span => {
+                start => undef,
+                end => undef,
             },
-        )
+        },
     );
 
     return $self;
@@ -59,7 +58,7 @@ sub _init($self) {
 
     Returns the recognized tokens from the $source_code.
 
-    In case of lexical errors, throws the exception Perlox::Interpreter::Scanner::UnexpectedCharacterException.
+    In case of scanning errors, throws the exception Perlox::Interpreter::Scanner::Exception.
 
 =cut
 sub get_tokens($self, $source_code) {
@@ -70,7 +69,7 @@ sub get_tokens($self, $source_code) {
     }
 
     if (scalar($self->{errors}->@*)) {
-        Perlox::Interpreter::Scanner::UnexpectedCharacterException->throw(
+        Perlox::Interpreter::Scanner::Exception->throw(
             errors => $self->{errors},
         );
     }

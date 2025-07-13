@@ -99,7 +99,7 @@ sub _reinit_scanner($self) {
 sub _handle_exceptions($self, $exception) {
     # TODO Reporter module or smth similar
     match ($exception : isa) {
-        case (Perlox::Interpreter::Scanner::UnexpectedCharacterException) {
+        case (Perlox::Interpreter::Scanner::Exception) {
             foreach my $unexpected_character_error ($_->errors->@*) {
                 say(sprintf(
                     '%s, at line %d, column: %d',
