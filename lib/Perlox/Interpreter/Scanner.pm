@@ -84,6 +84,10 @@ sub get_tokens($self, $source_code) {
 sub _get_next_token($self) {
     my $next_character = $self->_consume_next_character();
 
+    unless (is_whitespace($next_character)) {
+        $self->_start_growing_token();
+    }
+
     match ($next_character: eq) {
         case ('(') { $self->_save_current_token(TokenType::LEFT_PAREN); }
         case (')') { $self->_save_current_token(TokenType::RIGHT_PAREN); }
@@ -134,7 +138,7 @@ sub _get_next_token($self) {
         case ('"') { $self->_parse_string(); }
         case if (is_digit($next_character)) { $self->_parse_number(); }
         case ("\n") { $self->_process_new_line(); }
-        case if (is_whitespace($next_character)) {}
+        case if (is_whitespace($next_character)) { $self->_clear_token(); }
         default {
             $self->_save_error(sprintf('Unexpected character: \'%s\'', $next_character));
         }
@@ -186,6 +190,8 @@ sub _parse_number($self) {
 }
 
 sub _save_current_token($self, $token_type) {
+    $self->_end_growing_token();
+
     my $value;
     if ($token_type == TokenType::STRING) {
         $value = join('', @{$self->{source}}[
@@ -207,24 +213,21 @@ sub _save_current_token($self, $token_type) {
         ),
     );
 
-    @{$self->{token}{span}}{qw(start end)} = (undef, undef);
+    $self->_clear_token();
 
     return;
 }
 
 sub _consume_next_character($self) {
-    my $next_character = $self->{source}[$self->{offset}];
+    return $self->{source}[$self->{offset}++];
+}
 
-    if (is_whitespace($next_character)) {
-        $self->_skip_next_character();
-    } else {
-        if (!defined($self->{token}{span}{start})) {
-            $self->{token}{span}{start} = $self->{offset};
-        }
-        $self->{token}{span}{end} = $self->{offset}++;
-    }
+sub _start_growing_token($self) {
+    $self->{token}{span}{start} = $self->{offset} - 1;
+}
 
-    return $next_character;
+sub _end_growing_token($self) {
+    $self->{token}{span}{end} = $self->{offset} - 1;
 }
 
 sub _skip_next_character($self) {
@@ -233,17 +236,11 @@ sub _skip_next_character($self) {
 
 sub _process_new_line($self) {
     $self->{line}++;
-    @{$self->{token}{span}}{qw(start end)} = (undef, undef);
+    $self->_clear_token();
 }
 
 sub _clear_token($self) {
-    $self->{token} = {
-        span => {
-            start => undef,
-            end => undef,
-        },
-        value => undef,
-    };
+    @{$self->{token}{span}}{qw(start end)} = (undef, undef);
 }
 
 sub _peek_next_character($self) {
@@ -265,7 +262,7 @@ sub _save_error($self, $error) {
         },
     );
 
-    @{$self->{token}{span}}{qw(start end)} = (undef, undef);
+    $self->_clear_token();
 }
 
 1;
