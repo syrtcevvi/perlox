@@ -29,14 +29,18 @@ use Perlox::Interpreter::Scanner::Utils qw(
     is_whitespace
 );
 
-sub new($class) {
+sub new($class, %args) {
     my $self = bless({}, $class);
-    return $self->_init();
+    return $self->_init(%args);
 }
 
-sub _init($self) {
+sub _init($self, %args) {
     %$self = (
         %$self,
+
+        options => {
+            verbose => $args{verbose},
+        },
 
         source => [],
         offset => 0,
@@ -77,6 +81,12 @@ sub get_tokens($self, $source_code) {
     }
 
     $self->_save_current_token(TokenType::EOF);
+
+    if ($self->{options}{verbose}) {
+        foreach my $token ($self->{tokens}->@*) {
+            say($token);
+        }
+    }
 
     return $self->{tokens};
 }

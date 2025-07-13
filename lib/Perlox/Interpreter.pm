@@ -3,7 +3,7 @@ package Perlox::Interpreter;
 =encoding utf8
 =head1 Brief description
 
-TODO
+    Tree-walking interpreter for the Lox language.
 
 =cut
 
@@ -21,6 +21,7 @@ use Try::Tiny qw(try catch);
 
 use Perlox::Interpreter::Exceptions ();
 use Perlox::Interpreter::Scanner ();
+use Perlox::Interpreter::Parser ();
 use Perlox::CLI qw(
     show_repl_header
     show_repl_exit_message
@@ -29,10 +30,14 @@ use Perlox::CLI qw(
 
 Readonly::Scalar our $VERSION => '0.1.0';
 
-sub new($class) {
+sub new($class, %args) {
     return bless(
         {
-            scanner => Perlox::Interpreter::Scanner->new(),
+            options => {
+                verbose => $args{verbose},
+            },
+            scanner => Perlox::Interpreter::Scanner->new(verbose => $args{verbose}),
+            parser => Perlox::Interpreter::Parser->new(verbose => $args{verbose}),
         },
         $class,
     );
@@ -63,10 +68,6 @@ sub run_from_string($self, $source_string) {
         $self->_handle_exceptions($_);
         return;
     };
-
-    foreach my $token (@$tokens) {
-        print $token, "\n";
-    }
 }
 
 sub run_repl($self) {
@@ -83,17 +84,21 @@ sub run_repl($self) {
 
         $self->run_from_string($source_code_line);
 
-        # Clear the interpreter scanner state
-        $self->_reinit_scanner();
+        $self->_reinit();
     }
 }
 
 sub _reinit($self) {
-    # TODO
+    $self->_reinit_scanner();
+    $self->_reinit_parser();
 }
 
 sub _reinit_scanner($self) {
-    $self->{scanner} = Perlox::Interpreter::Scanner->new();
+    $self->{scanner} = Perlox::Interpreter::Scanner->new(verbose => $self->{options}{verbose});
+}
+
+sub _reinit_parser($self) {
+    $self->{parser} = Perlox::Interpreter::Parser->new(verbose => $self->{options}{verbose});
 }
 
 sub _handle_exceptions($self, $exception) {

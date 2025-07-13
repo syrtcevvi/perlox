@@ -1,12 +1,5 @@
 #!/usr/bin/perl
 
-=encoding utf8
-=head1 Brief description
-
-    Lox language implementation written in Perl.
-
-=cut
-
 use v5.24;
 use strict;
 use warnings;
@@ -16,6 +9,8 @@ use lib::abs '../lib';
 
 use Syntax::Keyword::Match;
 use Readonly qw(Readonly);
+use Getopt::Long qw(GetOptions);
+use Pod::Usage qw(pod2usage);
 
 use Perlox::Interpreter ();
 
@@ -24,7 +19,19 @@ Readonly::Hash my %EXIT_CODES => (
     TOO_MANY_ARGUMENTS => 64,
 );
 
-my $interpreter = Perlox::Interpreter->new();
+my %cli_arguments = (
+    help => 0,
+    verbose => 0,
+);
+GetOptions(
+    'help|h' => \$cli_arguments{help},
+    'verbose' => \$cli_arguments{verbose},
+) or pod2usage(2);
+pod2usage(1) if $cli_arguments{help};
+
+my $interpreter = Perlox::Interpreter->new(
+    verbose => $cli_arguments{verbose},
+);
 
 match (my $args_count = scalar(@ARGV) : ==) {
     case (0) {
@@ -38,3 +45,19 @@ match (my $args_count = scalar(@ARGV) : ==) {
 }
 
 1;
+
+__END__
+
+=encoding utf8
+=head1 NAME
+
+perlox - Lox language implementation written in Perl.
+
+=head1 SYNOPSIS
+
+perlox [options] [script_file]
+
+=head1 OPTIONS
+
+    --help|-h - show the brief help page
+    --verbose - show verbose debug output for scanner/parser stages
