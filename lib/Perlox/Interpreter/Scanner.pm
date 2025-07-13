@@ -16,8 +16,6 @@ use experimental qw(signatures);
 use lib::abs '../../';
 
 use Syntax::Keyword::Match;
-use Clone 'clone';
-use List::Util qw(any);
 
 use Perlox::Interpreter::Exceptions ();
 use Perlox::Interpreter::Token ();
@@ -26,6 +24,10 @@ BEGIN {
     # Allows us to save some typing when working with token types
     *TokenType:: = *Perlox::Interpreter::Token::Type::;
 };
+use Perlox::Interpreter::Scanner::Utils qw(
+    is_digit
+    is_whitespace
+);
 
 sub new($class) {
     my $self = bless({}, $class);
@@ -76,10 +78,7 @@ sub get_tokens($self, $source_code) {
 
     $self->_save_current_token(TokenType::EOF);
 
-    my $tokens = clone($self->{tokens});
-    $self->{tokens} = [];
-
-    return $tokens;
+    return $self->{tokens};
 }
 
 sub _get_next_token($self) {
@@ -133,9 +132,9 @@ sub _get_next_token($self) {
             }
         }
         case ('"') { $self->_parse_string(); }
-        case if (_is_digit($next_character)) { $self->_parse_number(); }
+        case if (is_digit($next_character)) { $self->_parse_number(); }
         case ("\n") { $self->_process_new_line(); }
-        case if (_is_whitespace($next_character)) {}
+        case if (is_whitespace($next_character)) {}
         default {
             $self->_save_error(sprintf('Unexpected character: \'%s\'', $next_character));
         }
@@ -165,7 +164,7 @@ sub _parse_string($self) {
 
 sub _parse_number($self) {
     while (
-        _is_digit($self->_peek_next_character())
+        is_digit($self->_peek_next_character())
         && !$self->_is_eof()
     ) {
         $self->_consume_next_character();
@@ -173,7 +172,7 @@ sub _parse_number($self) {
 
     unless (
         $self->_is_eof()
-        || _is_whitespace($self->_peek_next_character())
+        || is_whitespace($self->_peek_next_character())
         || $self->_peek_next_character() eq "\n"
     ) {
         $self->_save_error(sprintf(
@@ -216,7 +215,7 @@ sub _save_current_token($self, $token_type) {
 sub _consume_next_character($self) {
     my $next_character = $self->{source}[$self->{offset}];
 
-    if (_is_whitespace($next_character)) {
+    if (is_whitespace($next_character)) {
         $self->_skip_next_character();
     } else {
         if (!defined($self->{token}{span}{start})) {
@@ -267,17 +266,6 @@ sub _save_error($self, $error) {
     );
 
     @{$self->{token}{span}}{qw(start end)} = (undef, undef);
-}
-
-sub _is_digit($maybe_digit) {
-    return $maybe_digit =~ m/^\d$/;
-}
-
-sub _is_whitespace($maybe_whitespace) {
-    $maybe_whitespace //= '';
-    return any {
-        $maybe_whitespace eq $_
-    } (' ', "\r", "\t", "\f");
 }
 
 1;

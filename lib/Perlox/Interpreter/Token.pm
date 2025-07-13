@@ -3,7 +3,7 @@ package Perlox::Interpreter::Token;
 =encoding utf8
 =head1 Brief description
 
-    Represents the token
+    Represents the token, which is the output of the Scanner iteration.
 
 =cut
 
@@ -15,6 +15,7 @@ use lib::abs '../..';
 use experimental 'signatures';
 
 use Readonly qw(Readonly);
+use List::Util qw(any);
 
 BEGIN {
     use Perlox::Interpreter::Token::Type ();
@@ -86,7 +87,7 @@ sub _to_string {
     my $string_representation = $TOKEN_TYPE_TO_STRING{$self->{type}};
     if ($self->{type} == TokenType::STRING) {
         $string_representation .= ' "' . $self->{value} . '"';
-    } elsif ($self->{type} == TokenType::NUMBER) {
+    } elsif (any { $self->{type} == $_ } (TokenType::NUMBER, TokenType::IDENTIFIER)) {
         $string_representation .= ' ' . $self->{value};
     }
 
