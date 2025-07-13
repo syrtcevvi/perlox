@@ -30,17 +30,17 @@ use Perlox::Interpreter::Scanner::Utils qw(
 );
 
 sub new($class, %args) {
-    my $self = bless({}, $class);
-    return $self->_init(%args);
-}
-
-sub _init($self, %args) {
-    %$self = (
-        %$self,
-
+    my $self = bless({
         options => {
             verbose => $args{verbose},
         },
+    }, $class);
+    return $self->init();
+}
+
+sub init($self) {
+    %$self = (
+        %$self,
 
         source => [],
         offset => 0,

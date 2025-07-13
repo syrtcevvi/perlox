@@ -15,27 +15,24 @@ use utf8;
 use experimental qw(signatures);
 use lib::abs '../../';
 
-use Perlox::Interpreter::Scanner ();
-
 sub new($class, %args) {
-    my $self = bless({}, $class);
-    return $self->_init(verbose => $args{verbose});
-}
-
-sub parse($self, $source_code) {
-    my $tokens = $self->{scanner}->get_tokens($source_code);
-}
-
-sub _init($self, %args) {
-    %$self = (
-        %$self,
-
+    my $self = bless({
         options => {
             verbose => $args{verbose},
         },
+    }, $class);
+    return $self->init();
+}
 
-        scanner => Perlox::Interpreter::Scanner->new(verbose => $args{verbose}),
-        ast => {},
+sub parse($self, $source_code) {
+    $self->{tokens} = $self->{scanner}->get_tokens($source_code);
+}
+
+sub init($self) {
+    %$self = (
+        %$self,
+
+        tokens => [],
     );
     return $self;
 }

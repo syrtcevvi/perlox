@@ -89,16 +89,8 @@ sub run_repl($self) {
 }
 
 sub _reinit($self) {
-    $self->_reinit_scanner();
-    $self->_reinit_parser();
-}
-
-sub _reinit_scanner($self) {
-    $self->{scanner} = Perlox::Interpreter::Scanner->new(verbose => $self->{options}{verbose});
-}
-
-sub _reinit_parser($self) {
-    $self->{parser} = Perlox::Interpreter::Parser->new(verbose => $self->{options}{verbose});
+    $self->{scanner}->init();
+    $self->{parser}->init();
 }
 
 sub _handle_exceptions($self, $exception) {
