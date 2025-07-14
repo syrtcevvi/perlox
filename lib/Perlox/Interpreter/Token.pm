@@ -73,12 +73,7 @@ Readonly::Hash my %TOKEN_TYPE_TO_STRING => (
 );
 
 sub new($class, %args) {
-    return bless({
-        type => $args{type},
-        span => $args{span},
-        line => $args{line},
-        value => $args{value},
-    }, $class);
+    return bless({%args}, $class);
 }
 
 sub _to_string {

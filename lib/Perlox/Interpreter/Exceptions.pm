@@ -17,6 +17,11 @@ use Exception::Class (
         description => 'base exception class for scanner-related exceptions',
         fields => ['errors'],
     },
+    Perlox::Interpreter::Parser::Exception => {
+        isa => 'Perlox::Interpreter::Exception',
+        description => 'base exception class for parser-related exceptions',
+        fields => ['errors'],
+    },
 );
 
 1;

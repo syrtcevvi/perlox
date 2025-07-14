@@ -26,6 +26,7 @@ BEGIN {
 };
 use Perlox::Interpreter::Scanner::Utils qw(
     is_digit
+    is_alpha
     is_whitespace
 );
 
@@ -184,11 +185,7 @@ sub _parse_number($self) {
         $self->_consume_next_character();
     }
 
-    unless (
-        $self->_is_eof()
-        || is_whitespace($self->_peek_next_character())
-        || $self->_peek_next_character() eq "\n"
-    ) {
+    if (!$self->_is_eof() && is_alpha($self->_peek_next_character())) {
         $self->_save_error(sprintf(
             'Unexpected character after number: %s',
             $self->_peek_next_character(),

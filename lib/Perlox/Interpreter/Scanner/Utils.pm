@@ -18,11 +18,16 @@ use List::Util qw(any);
 
 our @EXPORT_OK = qw(
     is_digit
+    is_alpha
     is_whitespace
 );
 
 sub is_digit($maybe_digit) {
     return $maybe_digit =~ m/^\d$/;
+}
+
+sub is_alpha($maybe_alpha) {
+    return $maybe_alpha =~ m/^[a-zA-Z_]$/;
 }
 
 sub is_whitespace($maybe_whitespace) {

@@ -60,10 +60,11 @@ sub run_from_file($self, $path_to_script) {
 }
 
 sub run_from_string($self, $source_string) {
-    my $tokens;
     try {
-        $tokens = $self->{scanner}->get_tokens($source_string);
-        # TODO parser, tree-walking execution
+        my $tokens = $self->{scanner}->get_tokens($source_string);
+        my $ast = $self->{parser}->parse($tokens);
+
+        # TODO tree-walking execution
     } catch {
         $self->_handle_exceptions($_);
         return;
@@ -97,11 +98,16 @@ sub _handle_exceptions($self, $exception) {
     # TODO Reporter module or smth similar
     match ($exception : isa) {
         case (Perlox::Interpreter::Scanner::Exception) {
-            foreach my $unexpected_character_error ($_->errors->@*) {
+            foreach my $scanner_error ($_->errors->@*) {
                 say(sprintf(
                     '%s, at line %d, column: %d',
-                    @{$unexpected_character_error}{qw(error line column)},
+                    @{$scanner_error}{qw(error line column)},
                 ));
+            }
+        }
+        case (Perlox::Interpreter::Parser::Exception) {
+            foreach my $parser_error ($_->errors->@*) {
+                # TODO
             }
         }
         default {
