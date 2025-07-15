@@ -65,17 +65,18 @@ sub run_from_string($self, $source_string) {
 
         # TODO CLI module
         if ($self->{options}{verbose}) {
-            say('Scanner output: ');
+            say('Scanner output:');
             foreach my $token (@$tokens) {
                 say($token);
             }
+            say('');
         }
 
         my $ast = $self->{parser}->parse($tokens);
 
         if ($self->{options}{verbose}) {
-            say('Parser output');
-            print($ast);
+            say('Parser output:');
+            say($ast);
         }
 
         # TODO tree-walking execution

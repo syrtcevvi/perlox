@@ -86,6 +86,10 @@ sub _to_string {
         $string_representation .= ' ' . $self->{value};
     }
 
+    if (defined($self->{span}{start}) && defined($self->{span}{end})) {
+        $string_representation .= sprintf(' (%s..%s)', @{$self->{span}}{qw(start end)});
+    }
+
     return $string_representation;
 }
 

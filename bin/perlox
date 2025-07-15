@@ -25,6 +25,7 @@ my %cli_arguments = (
 );
 GetOptions(
     'help|h' => \$cli_arguments{help},
+    # TODO separate the scanner/parser verbose mode?
     'verbose' => \$cli_arguments{verbose},
 ) or pod2usage(2);
 pod2usage(1) if $cli_arguments{help};

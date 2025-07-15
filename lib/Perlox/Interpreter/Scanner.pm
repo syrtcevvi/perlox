@@ -16,6 +16,7 @@ use experimental qw(signatures);
 use lib::abs '../../';
 
 use Syntax::Keyword::Match;
+use Clone qw(clone);
 
 use Perlox::Interpreter::Exceptions ();
 use Perlox::Interpreter::Token ();
@@ -204,7 +205,9 @@ sub _save_current_token($self, $token_type) {
         $self->{tokens}->@*,
         Perlox::Interpreter::Token->new(
             type => $token_type,
-            # It makes sense to store a lexeme value for some token types (string, numbers)
+            # Such metadata is important, it may be used in the next stages (parsing, for instance)
+            span => clone($self->{token}{span}),
+            # It makes sense to store a lexeme value for some token types (string, numbers, identificators)
             defined($value)
                 ? (value => $value) : (),
         ),
