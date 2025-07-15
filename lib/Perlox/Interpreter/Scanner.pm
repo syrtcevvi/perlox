@@ -31,11 +31,7 @@ use Perlox::Interpreter::Scanner::Utils qw(
 );
 
 sub new($class, %args) {
-    my $self = bless({
-        options => {
-            verbose => $args{verbose},
-        },
-    }, $class);
+    my $self = bless({}, $class);
     return $self->init();
 }
 
@@ -82,12 +78,6 @@ sub get_tokens($self, $source_code) {
     }
 
     $self->_save_current_token(TokenType::EOF);
-
-    if ($self->{options}{verbose}) {
-        foreach my $token ($self->{tokens}->@*) {
-            say($token);
-        }
-    }
 
     return $self->{tokens};
 }

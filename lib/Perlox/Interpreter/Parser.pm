@@ -15,7 +15,6 @@ use utf8;
 use experimental qw(signatures);
 use lib::abs '../../';
 
-use Data::Dumper qw(Dumper);
 use List::Util qw(any);
 
 use Perlox::Interpreter::Parser::Expression ();
@@ -28,11 +27,7 @@ BEGIN {
 };
 
 sub new($class, %args) {
-    my $self = bless({
-        options => {
-            verbose => $args{verbose},
-        },
-    }, $class);
+    my $self = bless({}, $class);
     return $self->init();
 }
 
@@ -53,13 +48,7 @@ sub init($self) {
 }
 
 sub _parse_expression($self) {
-    my $expr = $self->_parse_equality();
-
-    if ($self->{options}{verbose}) {
-        print(Dumper $expr);
-    }
-
-    return $expr;
+    return $self->_parse_equality();
 }
 
 # It's a bit strange to separate the _parse_equality(==, !=) and _parse_comparison(>, >=, <, <=) to different

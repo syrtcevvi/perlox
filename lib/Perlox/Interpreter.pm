@@ -36,8 +36,8 @@ sub new($class, %args) {
             options => {
                 verbose => $args{verbose},
             },
-            scanner => Perlox::Interpreter::Scanner->new(verbose => $args{verbose}),
-            parser => Perlox::Interpreter::Parser->new(verbose => $args{verbose}),
+            scanner => Perlox::Interpreter::Scanner->new(),
+            parser => Perlox::Interpreter::Parser->new(),
         },
         $class,
     );
@@ -62,7 +62,21 @@ sub run_from_file($self, $path_to_script) {
 sub run_from_string($self, $source_string) {
     try {
         my $tokens = $self->{scanner}->get_tokens($source_string);
+
+        # TODO CLI module
+        if ($self->{options}{verbose}) {
+            say('Scanner output: ');
+            foreach my $token (@$tokens) {
+                say($token);
+            }
+        }
+
         my $ast = $self->{parser}->parse($tokens);
+
+        if ($self->{options}{verbose}) {
+            say('Parser output');
+            print($ast);
+        }
 
         # TODO tree-walking execution
     } catch {
