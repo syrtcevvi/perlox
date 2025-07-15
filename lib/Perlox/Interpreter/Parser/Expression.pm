@@ -15,7 +15,8 @@ use lib::abs '../../../';
 use Syntax::Keyword::Match;
 use Readonly qw(Readonly);
 
-Readonly::Scalar my $OFFSET_INC => 2;
+Readonly::Scalar my $OFFSET_INC => 1;
+Readonly::Scalar my $INDENTATION_SEQUENCE => '| ';
 
 use overload
     '""' => \&_to_string;
@@ -38,12 +39,12 @@ sub _to_string {
 sub _get_expression_tree($self, $offset) {
     match($self->{type} : ==) {
         case (ExpressionType::LITERAL) {
-            return(' ' x $offset . $self->{value} . "\n");
+            return($INDENTATION_SEQUENCE x $offset . $self->{value} . "\n");
         } case (ExpressionType::UNARY) {
-            return (' ' x $offset . $self->{op} . "\n")
+            return ($INDENTATION_SEQUENCE x $offset . $self->{op} . "\n")
                 . $self->{value}->_get_expression_tree($offset + $OFFSET_INC);
         } case (ExpressionType::BINARY) {
-            return(' ' x $offset . $self->{op} . "\n")
+            return($INDENTATION_SEQUENCE x $offset . $self->{op} . "\n")
                 . $self->{lhs}->_get_expression_tree($offset + $OFFSET_INC)
                 . $self->{rhs}->_get_expression_tree($offset + $OFFSET_INC);
         } case (ExpressionType::GROUPING) {
