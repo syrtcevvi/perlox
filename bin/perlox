@@ -40,7 +40,7 @@ match (my $args_count = scalar(@ARGV) : ==) {
     } case (1) {
         $interpreter->run_from_file($ARGV[0]);
     } case if ($args_count > 1) {
-        Perlox::CLI::show_help_message();
+        pod2usage(1);
         exit($EXIT_CODES{TOO_MANY_ARGUMENTS});
     }
 }

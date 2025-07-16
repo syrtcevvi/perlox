@@ -14,6 +14,7 @@ use utf8;
 use lib::abs '../..';
 use experimental 'signatures';
 
+use Exporter qw(import);
 use Readonly qw(Readonly);
 use List::Util qw(any);
 
@@ -25,6 +26,27 @@ BEGIN {
 
 use overload
     '""' => \&_to_string;
+
+our @EXPORT_OK = qw(%KEYWORDS);
+
+Readonly::Hash our %KEYWORDS => (
+    and => TokenType::AND,
+    class => TokenType::CLASS,
+    else => TokenType::ELSE,
+    false => TokenType::FALSE,
+    for => TokenType::FOR,
+    fun => TokenType::FUN,
+    if => TokenType::IF,
+    nil => TokenType::NIL,
+    or => TokenType::OR,
+    print =>TokenType::PRINT,
+    return =>TokenType::RETURN,
+    super =>TokenType::SUPER,
+    this => TokenType::THIS,
+    true => TokenType::TRUE,
+    var => TokenType::VAR,
+    while =>TokenType::WHILE,
+);
 
 Readonly::Hash my %TOKEN_TYPE_TO_STRING => (
     TokenType::LEFT_PAREN => '(',

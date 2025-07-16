@@ -19,7 +19,7 @@ use Syntax::Keyword::Match;
 use Clone qw(clone);
 
 use Perlox::Interpreter::Exceptions ();
-use Perlox::Interpreter::Token ();
+use Perlox::Interpreter::Token qw(%KEYWORDS);
 BEGIN {
     use Perlox::Interpreter::Token::Type ();
     # Allows us to save some typing when working with token types
@@ -217,11 +217,7 @@ sub _save_current_token($self, $token_type) {
             $self->{token}{span}{start}  .. $self->{token}{span}{end}
         ]);
 
-        match ($value: eq) {
-            case ('true') { $value = 1; $token_type = TokenType::TRUE; }
-            case ('false') { $value = 0; $token_type = TokenType::FALSE; }
-            default { $token_type = TokenType::IDENTIFIER; }
-        }
+        $token_type = $KEYWORDS{$value} // TokenType::IDENTIFIER;
     } elsif ($token_type == TokenType::NUMBER) {
         $value = join('', @{$self->{source}}[
             $self->{token}{span}{start}  .. $self->{token}{span}{end}
