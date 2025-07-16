@@ -19,6 +19,7 @@ use List::Util qw(any);
 our @EXPORT_OK = qw(
     is_digit
     is_alpha
+    is_alpha_numeric
     is_whitespace
 );
 
@@ -28,6 +29,10 @@ sub is_digit($maybe_digit) {
 
 sub is_alpha($maybe_alpha) {
     return $maybe_alpha =~ m/^[a-zA-Z_]$/;
+}
+
+sub is_alpha_numeric($maybe_alpha_numeric) {
+    return $maybe_alpha_numeric =~ m/^[a-zA-Z_0-9]$/;
 }
 
 sub is_whitespace($maybe_whitespace) {

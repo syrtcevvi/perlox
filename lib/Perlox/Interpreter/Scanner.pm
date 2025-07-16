@@ -28,6 +28,7 @@ BEGIN {
 use Perlox::Interpreter::Scanner::Utils qw(
     is_digit
     is_alpha
+    is_alpha_numeric
     is_whitespace
 );
 
@@ -139,6 +140,7 @@ sub _get_next_token($self) {
         }
         case ('"') { $self->_parse_string(); }
         case if (is_digit($next_character)) { $self->_parse_number(); }
+        case if (is_alpha($next_character)) { $self->_parse_identifier_or_keyword(); }
         case ("\n") { $self->_process_new_line(); }
         case if (is_whitespace($next_character)) { $self->_clear_token(); }
         default {
@@ -187,6 +189,19 @@ sub _parse_number($self) {
     $self->_save_current_token(TokenType::NUMBER);
 }
 
+sub _parse_identifier_or_keyword($self) {
+    while (
+        is_alpha_numeric($self->_peek_next_character())
+        && !$self->_is_eof()
+    ) {
+        $self->_consume_next_character();
+    }
+
+    # TODO some checks
+
+    $self->_save_current_token(TokenType::IDENTIFIER);
+}
+
 sub _save_current_token($self, $token_type) {
     $self->_end_growing_token();
 
@@ -195,6 +210,18 @@ sub _save_current_token($self, $token_type) {
         $value = join('', @{$self->{source}}[
             $self->{token}{span}{start} + 1 .. $self->{token}{span}{end} - 1
         ]);
+    } elsif ($token_type == TokenType::IDENTIFIER) {
+        # Well, this branch is not only for identifiers, but also for the reserved words too
+        # Which are subclass of the identifiers btw
+        $value = join('', @{$self->{source}}[
+            $self->{token}{span}{start}  .. $self->{token}{span}{end}
+        ]);
+
+        match ($value: eq) {
+            case ('true') { $value = 1; $token_type = TokenType::TRUE; }
+            case ('false') { $value = 0; $token_type = TokenType::FALSE; }
+            default { $token_type = TokenType::IDENTIFIER; }
+        }
     } elsif ($token_type == TokenType::NUMBER) {
         $value = join('', @{$self->{source}}[
             $self->{token}{span}{start}  .. $self->{token}{span}{end}

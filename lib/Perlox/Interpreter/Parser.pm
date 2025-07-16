@@ -135,15 +135,10 @@ sub _parse_unary($self) {
 sub _parse_primary($self) {
     # In Perl it's hard to distinguish numbers/booleans/strings
     # which are notably different in the Lox language
-    if (my $false_token = $self->_match(TokenType::FALSE)) {
+    if (my $boolean_token = $self->_match(TokenType::FALSE, TokenType::TRUE)) {
         return Perlox::Interpreter::Parser::Expression->new(
             type => ExpressionType::LITERAL,
-            value => $false_token,
-        );
-    } elsif (my $true_token = $self->_match(TokenType::TRUE)) {
-        return Perlox::Interpreter::Parser::Expression->new(
-            type => ExpressionType::LITERAL,
-            value => $true_token,
+            value => $boolean_token,
         );
     } elsif (my $num_or_str_token = $self->_match(TokenType::NUMBER, TokenType::STRING)) {
         return Perlox::Interpreter::Parser::Expression->new(
