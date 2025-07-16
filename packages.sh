@@ -6,4 +6,5 @@ sudo apt install liblib-abs-perl \
     libenum-perl \
     libpath-class-perl \
     libreadonly-perl \
-    libexception-class-perl
+    libexception-class-perl \
+    libterm-readline-gnu-perl

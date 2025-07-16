@@ -16,6 +16,7 @@ use lib::abs '../';
 
 use Syntax::Keyword::Match;
 use Path::Class::File ();
+use Term::ReadLine ();
 use Readonly qw(Readonly);
 use Try::Tiny qw(try catch);
 
@@ -25,7 +26,6 @@ use Perlox::Interpreter::Parser ();
 use Perlox::CLI qw(
     show_repl_header
     show_repl_exit_message
-    show_prompt
 );
 
 Readonly::Scalar our $VERSION => '0.1.0';
@@ -89,18 +89,22 @@ sub run_from_string($self, $source_string) {
 sub run_repl($self) {
     show_repl_header($VERSION);
 
-    my $source_code_line = '';
-    while (1) {
-        show_prompt();
-        $source_code_line = <>;
-        if (!defined($source_code_line)) {
-            show_repl_exit_message();
-            return;
-        }
+    my $term = Term::ReadLine->new('perlox CLI interface');
+    $term->enableUTF8();
+    $term->ornaments('');
 
+    my $line_i = 1;
+    my $source_code_line = '';
+    while (defined($source_code_line = $term->readline("$line_i: "))) {
         $self->run_from_string($source_code_line);
 
         $self->_reinit();
+        $line_i++;
+    }
+
+    if (!defined($source_code_line)) {
+        show_repl_exit_message();
+        return;
     }
 }
 
