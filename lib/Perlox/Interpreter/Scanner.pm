@@ -19,11 +19,14 @@ use Syntax::Keyword::Match;
 use Clone qw(clone);
 
 use Perlox::Interpreter::Exceptions ();
+use Perlox::Interpreter::Error ();
 use Perlox::Interpreter::Token qw(%KEYWORDS);
 BEGIN {
     use Perlox::Interpreter::Token::Type ();
     # Allows us to save some typing when working with token types
     *TokenType:: = *Perlox::Interpreter::Token::Type::;
+    use Perlox::Interpreter::Error::Type ();
+    *ErrorType:: = *Perlox::Interpreter::Error::Type::;
 };
 use Perlox::Interpreter::Scanner::Utils qw(
     is_digit
@@ -45,8 +48,6 @@ sub init($self) {
         offset => 0,
         line => 1,
 
-        errors => [],
-
         tokens => [],
         token => {
             span => {
@@ -54,6 +55,8 @@ sub init($self) {
                 end => undef,
             },
         },
+
+        errors => [],
     );
 
     return $self;
@@ -144,7 +147,10 @@ sub _get_next_token($self) {
         case ("\n") { $self->_process_new_line(); }
         case if (is_whitespace($next_character)) { $self->_clear_token(); }
         default {
-            $self->_save_error(sprintf('Unexpected character: \'%s\'', $next_character));
+            $self->_save_error(
+                message => sprintf('Unexpected character: \'%s\'', $next_character),
+                type => ErrorType::UNEXPECTED_CHARACTER,
+            );
         }
     }
 }
@@ -161,7 +167,10 @@ sub _parse_string($self) {
     }
 
     if ($self->_is_eof()) {
-        $self->_save_error('You probably missed the trailing quote symbol "');
+        $self->_save_error(
+            message => 'You probably missed the trailing quote symbol "',
+            type => ErrorType::MISSED_CLOSING_QUOTE,
+        );
         return;
     }
 
@@ -171,18 +180,27 @@ sub _parse_string($self) {
 }
 
 sub _parse_number($self) {
+    my $is_float = 0;
+    my $last_character;
     while (
-        is_digit($self->_peek_next_character())
+        (
+            is_digit($self->_peek_next_character())
+            || !$is_float && $self->_peek_next_character() =~ m/\./
+        )
         && !$self->_is_eof()
     ) {
-        $self->_consume_next_character();
+        $is_float = 1 if $self->_peek_next_character() =~ m/\./;
+        $last_character = $self->_consume_next_character();
     }
 
-    if (!$self->_is_eof() && is_alpha($self->_peek_next_character())) {
-        $self->_save_error(sprintf(
-            'Unexpected character after number: %s',
-            $self->_peek_next_character(),
-        ));
+    if (is_alpha($self->_peek_next_character())) {
+        $self->_save_error(
+            message => sprintf(
+                'Unexpected character after number: %s',
+                $self->_peek_next_character(),
+            ),
+            type => ErrorType::UNEXPECTED_CHARACTER,
+        );
         return;
     }
 
@@ -274,15 +292,22 @@ sub _is_eof($self) {
     return $self->{offset} >= scalar($self->{source}->@*);
 }
 
-sub _save_error($self, $error) {
+sub _save_error($self, %args) {
     push(
         $self->{errors}->@*,
-        {
-            error => $error,
-            # Column value is 1-based (like in an IDE), so it's okay to pass offset as-is
-            column => $self->{offset},
-            line => $self->{line},
-        },
+        Perlox::Interpreter::Error->new(
+            stage => 'scanner',
+            type => $args{type},
+            message => $args{message},
+            location => {
+                span => {
+                    # Column value is 1-based (like in an IDE), so it's okay to pass offset as-is
+                    start => $self->{offset},
+                    end => $self->{offset},
+                },
+                line => $self->{line},
+            },
+        ),
     );
 
     $self->_clear_token();

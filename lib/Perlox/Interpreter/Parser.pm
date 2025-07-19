@@ -17,6 +17,7 @@ use lib::abs '../../';
 
 use List::Util qw(any);
 
+use Perlox::Interpreter::Exceptions ();
 use Perlox::Interpreter::Parser::Expression ();
 BEGIN {
     use Perlox::Interpreter::Token::Type ();
@@ -31,20 +32,30 @@ sub new($class, %args) {
     return $self->init();
 }
 
-sub parse($self, $tokens) {
-    $self->{tokens} = $tokens;
-
-    return $self->_parse_expression();
-}
-
 sub init($self) {
     %$self = (
         %$self,
 
         tokens => [],
         offset => 0,
+
+        errors => [],
     );
     return $self;
+}
+
+sub parse($self, $tokens) {
+    $self->{tokens} = $tokens;
+
+    my $expr = $self->_parse_expression();
+
+    if (scalar($self->{errors}->@*)) {
+        Perlox::Interpreter::Parser::Exception->throw(
+            errors => $self->{errors},
+        );
+    }
+
+    return $expr;
 }
 
 sub _parse_expression($self) {

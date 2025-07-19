@@ -118,15 +118,12 @@ sub _handle_exceptions($self, $exception) {
     match ($exception : isa) {
         case (Perlox::Interpreter::Scanner::Exception) {
             foreach my $scanner_error ($_->errors->@*) {
-                say(sprintf(
-                    '%s, at line %d, column: %d',
-                    @{$scanner_error}{qw(error line column)},
-                ));
+                say($scanner_error);
             }
         }
         case (Perlox::Interpreter::Parser::Exception) {
             foreach my $parser_error ($_->errors->@*) {
-                # TODO
+                say($parser_error);
             }
         }
         default {
