@@ -1,11 +1,9 @@
 #!/usr/bin/perl
 
 use v5.24;
-use strict;
-use warnings;
-use utf8;
-use open qw(:std :utf8);
-use lib::abs '../lib';
+use strictures 2;
+use utf8::all;
+use lib::abs '../lib/';
 
 use Syntax::Keyword::Match;
 use Readonly qw(Readonly);
@@ -13,6 +11,7 @@ use Getopt::Long qw(GetOptions);
 use Pod::Usage qw(pod2usage);
 
 use Perlox::Interpreter ();
+use Perlox::CLI qw(show_version);
 
 Readonly::Hash my %EXIT_CODES => (
     OK => 0,
@@ -20,26 +19,31 @@ Readonly::Hash my %EXIT_CODES => (
 );
 
 my %cli_arguments = (
-    help => 0,
+    show_help => 0,
+    show_version => 0,
     verbose => 0,
 );
 GetOptions(
-    'help|h' => \$cli_arguments{help},
-    # TODO separate the scanner/parser verbose mode?
-    'verbose' => \$cli_arguments{verbose},
+    'help|h' => \$cli_arguments{show_help},
+    'verbose|v' => \$cli_arguments{verbose},
+    'version|V' => \$cli_arguments{show_version},
 ) or pod2usage(2);
-pod2usage(1) if $cli_arguments{help};
+pod2usage(1) if $cli_arguments{show_help};
+if ($cli_arguments{show_version}) {
+    show_version($Perlox::Interpreter::VERSION);
+    exit($EXIT_CODES{OK});
+}
 
 my $interpreter = Perlox::Interpreter->new(
     verbose => $cli_arguments{verbose},
 );
 
-match (my $args_count = scalar(@ARGV) : ==) {
+match (scalar(@ARGV) : ==) {
     case (0) {
         $interpreter->run_repl();
     } case (1) {
         $interpreter->run_from_file($ARGV[0]);
-    } case if ($args_count > 1) {
+    } default {
         pod2usage(1);
         exit($EXIT_CODES{TOO_MANY_ARGUMENTS});
     }
@@ -52,7 +56,7 @@ __END__
 =encoding utf8
 =head1 NAME
 
-perlox - Lox language implementation written in Perl.
+perlox - Lox language implementation written in Perl5.
 
 =head1 SYNOPSIS
 
@@ -61,4 +65,5 @@ perlox [options] [script_file]
 =head1 OPTIONS
 
     --help|-h - show the brief help page
-    --verbose - show verbose debug output for scanner/parser stages
+    --verbose|-v - show verbose debug output for scanner/parser stages
+    --version|-V - show the version of the Perlox
