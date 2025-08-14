@@ -15,8 +15,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install perl packages
-        run: ./packages.sh
+        run: ./deploy/packages.sh
       
       - name: Check Perl files
-        run: ./run_checks.sh
+        run: ./deploy/run_checks.sh
 

@@ -10,4 +10,3 @@ sudo apt install liblib-abs-perl \
     libterm-readline-gnu-perl \
     libstrictures-perl \
     libutf8-all-perl
-
