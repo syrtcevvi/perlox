@@ -8,15 +8,19 @@ package Perlox::Interpreter;
 =cut
 
 use v5.24;
-use strict;
-use warnings;
+use strictures 2;
 use utf8;
+use namespace::autoclean;
 use experimental 'signatures';
 use lib::abs '../';
+
+use Moose;
+use MooseX::StrictConstructor;
 
 use Syntax::Keyword::Match;
 use Path::Class::File ();
 use Term::ReadLine ();
+use Types::Standard qw(Bool);
 use Readonly qw(Readonly);
 use Try::Tiny qw(try catch);
 
@@ -26,22 +30,33 @@ use Perlox::Interpreter::Parser ();
 use Perlox::CLI qw(
     show_repl_header
     show_repl_exit_message
+
+    show_scanner_debug_output
+    show_parser_debug_output
+
+    show_error
 );
 
 Readonly::Scalar our $VERSION => '0.1.0';
 
-sub new($class, %args) {
-    return bless(
-        {
-            options => {
-                verbose => $args{verbose},
-            },
-            scanner => Perlox::Interpreter::Scanner->new(),
-            parser => Perlox::Interpreter::Parser->new(),
-        },
-        $class,
-    );
-}
+has '_scanner' => (
+    is => 'ro',
+    isa => 'Perlox::Interpreter::Scanner',
+    default => sub { return Perlox::Interpreter::Scanner->new(); },
+    init_arg => undef,
+);
+has '_parser' => (
+    is => 'ro',
+    isa => 'Perlox::Interpreter::Parser',
+    default => sub { return Perlox::Interpreter::Parser->new(); },
+    init_arg => undef,
+);
+has 'verbose' => (
+    is => 'rw',
+    isa => Bool,
+    default => 0,
+    reader => 'is_verbose_mode_enabled',
+);
 
 sub run_from_file($self, $path_to_script) {
     my $script_content;
@@ -59,24 +74,17 @@ sub run_from_file($self, $path_to_script) {
     $self->run_from_string($script_content);
 }
 
-sub run_from_string($self, $source_string) {
+sub run_from_string($self, $source_code) {
     try {
-        my $tokens = $self->{scanner}->get_tokens($source_string);
-
-        # TODO CLI module
-        if ($self->{options}{verbose}) {
-            say('Scanner output:');
-            foreach my $token (@$tokens) {
-                say($token);
-            }
-            say('');
+        # Make iterator interface for the scanner?
+        my $tokens = $self->_scanner->get_tokens($source_code);
+        if ($self->is_verbose_mode_enabled()) {
+            show_scanner_debug_output($tokens);
         }
 
-        my $ast = $self->{parser}->parse($tokens);
-
-        if ($self->{options}{verbose}) {
-            say('Parser output:');
-            say($ast);
+        my $ast = $self->_parser->parse($tokens);
+        if ($self->is_verbose_mode_enabled()) {
+            show_parser_debug_output($ast);
         }
 
         # TODO tree-walking execution
@@ -86,10 +94,20 @@ sub run_from_string($self, $source_string) {
     };
 }
 
+=head2 $self->run_repl()
+
+    For the sake of brevity the Perlox::Interpreter contains this function, it helps check things interactively
+    during the development and experiments.
+
+    Maybe this function has to be defined in different place, because interpreter by itself
+    has nothing to do with console IO (it just process the given input source) and can be embedded into application,
+    for instance (where console IO is excess).
+
+=cut
 sub run_repl($self) {
     show_repl_header($VERSION);
 
-    my $term = Term::ReadLine->new('perlox CLI interface');
+    my $term = Term::ReadLine->new('Perlox REPL');
     $term->enableUTF8();
     $term->ornaments('');
 
@@ -109,8 +127,8 @@ sub run_repl($self) {
 }
 
 sub _reinit($self) {
-    $self->{scanner}->init();
-    $self->{parser}->init();
+    $self->_scanner->init();
+    $self->_parser->init();
 }
 
 sub _handle_exceptions($self, $exception) {
@@ -118,16 +136,14 @@ sub _handle_exceptions($self, $exception) {
     match ($exception : isa) {
         case (Perlox::Interpreter::Scanner::Exception) {
             foreach my $scanner_error ($_->errors->@*) {
-                say($scanner_error);
+                show_error($scanner_error);
             }
-        }
-        case (Perlox::Interpreter::Parser::Exception) {
+        } case (Perlox::Interpreter::Parser::Exception) {
             foreach my $parser_error ($_->errors->@*) {
-                say($parser_error);
+                show_error($parser_error);
             }
-        }
-        default {
-            say $_;
+        } default {
+            show_error($_);
         }
     }
 }

@@ -1,4 +1,4 @@
-package Perlox::Interpreter::Token::Type;
+package Perlox::Interpreter::Types::Token::Type;
 
 use enum qw(
     LEFT_PAREN=1 RIGHT_PAREN LEFT_BRACE RIGHT_BRACE

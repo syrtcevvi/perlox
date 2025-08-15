@@ -14,12 +14,12 @@ use Exception::Class (
 
     Perlox::Interpreter::Scanner::Exception => {
         isa => 'Perlox::Interpreter::Exception',
-        description => 'base exception class for scanner-related exceptions',
+        description => 'Exception class for scanner-related errors',
         fields => ['errors'],
     },
     Perlox::Interpreter::Parser::Exception => {
         isa => 'Perlox::Interpreter::Exception',
-        description => 'base exception class for parser-related exceptions',
+        description => 'Exception class for parser-related errors',
         fields => ['errors'],
     },
 );

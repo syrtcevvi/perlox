@@ -18,6 +18,9 @@ Readonly::Hash my %EXIT_CODES => (
     TOO_MANY_ARGUMENTS => 64,
 );
 
+# Without this line colored output won't work correctly
+local $| = 1;
+
 my %cli_arguments = (
     show_help => 0,
     show_version => 0,
@@ -25,7 +28,7 @@ my %cli_arguments = (
 );
 GetOptions(
     'help|h' => \$cli_arguments{show_help},
-    'verbose|v' => \$cli_arguments{verbose},
+    'verbose' => \$cli_arguments{verbose},
     'version|V' => \$cli_arguments{show_version},
 ) or pod2usage(2);
 pod2usage(1) if $cli_arguments{show_help};
@@ -65,5 +68,5 @@ perlox [options] [script_file]
 =head1 OPTIONS
 
     --help|-h - show the brief help page
-    --verbose|-v - show verbose debug output for scanner/parser stages
+    --verbose - show verbose debug output for scanner/parser stages
     --version|-V - show the version of the Perlox
