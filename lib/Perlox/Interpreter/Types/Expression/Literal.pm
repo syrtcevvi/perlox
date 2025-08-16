@@ -8,29 +8,18 @@ package Perlox::Interpreter::Types::Expression::Literal;
 =cut
 
 use v5.24;
-use strictures 2;
+use strict;
+use warnings;
 use utf8;
-use namespace::autoclean;
 use lib::abs '../../../../';
+use parent 'Perlox::Interpreter::Types::Expression';
 
-use Moose;
-use MooseX::StrictConstructor;
-extends 'Perlox::Interpreter::Types::Expression';
-
-use Perlox::Interpreter::Types::Token ();
-
-has 'value' => (
-    is => 'ro',
-    isa => 'Perlox::Interpreter::Types::Token',
-    required => 1,
-);
+use Class::Tiny qw(value);
 
 sub _get_string_view {
     my ($self, $offset) = @_;
 
     return $self->INDENTATION_SEQUENCE x $offset . $self->value . "\n";
 }
-
-__PACKAGE__->meta->make_immutable;
 
 1;

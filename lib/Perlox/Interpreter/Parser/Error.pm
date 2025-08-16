@@ -8,22 +8,43 @@ package Perlox::Interpreter::Parser::Error;
 =cut
 
 use v5.24;
-use strictures 2;
+use strict;
+use warnings;
 use utf8;
-use namespace::autoclean;
 use lib::abs '../../../';
 
-use Moose;
-use MooseX::StrictConstructor;
+use Syntax::Keyword::Match;
 
-use overload
-    '""' => \&_to_string;
+use Perlox::Interpreter::Types::Span ();
+BEGIN {
+    use Perlox::Interpreter::Parser::Error::Type ();
+    *ErrorType:: = *Perlox::Interpreter::Parser::Error::Type::;
+};
 
+use Class::Tiny qw(message type line last_token_span);
 
-sub _to_string {
+use overload '""' => sub {
     my ($self) = @_;
-    # TODO
-    return 'TODO'
-}
+
+    match ($self->type : ==) {
+        case (ErrorType::UNEXPECTED_EOI) {
+            # TODO
+        } case(ErrorType::MISSED_CLOSING_PAREN) {
+            return sprintf(
+                '%s, at line %d, column: %d',
+                $self->message, $self->line,
+                # Span values are 0-based (like indexes), and we need the next place right after the last token
+                # So, it's + 2
+                $self->last_token_span->end + 2,
+            );
+        } default {
+            return sprintf(
+                '%s, at line %d, column: %d',
+                $self->message, $self->line,
+                $self->last_token_span->start,
+            );
+        }
+    }
+};
 
 1;

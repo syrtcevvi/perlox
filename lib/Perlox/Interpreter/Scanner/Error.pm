@@ -8,42 +8,14 @@ package Perlox::Interpreter::Scanner::Error;
 =cut
 
 use v5.24;
-use strictures 2;
+use strict;
+use warnings;
 use utf8;
-use namespace::autoclean;
 use lib::abs '../../../';
 
-use Moose;
-use MooseX::StrictConstructor;
-use Types::Standard qw(Int Str);
+use Class::Tiny qw(message type line span);
 
-use Perlox::Interpreter::Types::Span ();
-
-use overload
-    '""' => \&_to_string;
-
-has 'message' => (
-    is => 'ro',
-    isa => Str,
-    required => 1,
-);
-has 'type' => (
-    is => 'ro',
-    isa => Int,
-    required => 1,
-);
-has 'line' => (
-    is => 'ro',
-    isa => Int,
-    required => 1,
-);
-has 'span' => (
-    is => 'ro',
-    isa => 'Perlox::Interpreter::Types::Span',
-    required => 1,
-);
-
-sub _to_string {
+use overload '""' => sub {
     my ($self) = @_;
 
     return sprintf(
@@ -51,8 +23,6 @@ sub _to_string {
         $self->message, $self->line,
         $self->span->start,
     );
-}
-
-__PACKAGE__->meta->make_immutable;
+};
 
 1;

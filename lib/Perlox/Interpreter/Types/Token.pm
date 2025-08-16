@@ -8,26 +8,20 @@ package Perlox::Interpreter::Types::Token;
 =cut
 
 use v5.24;
-use strictures 2;
+use strict;
+use warnings;
 use utf8;
-use namespace::autoclean;
 use lib::abs '../../../';
 
-use Moose;
-use MooseX::StrictConstructor;
-
-use Readonly qw(Readonly);
-use List::Util qw(any);
-
-use Perlox::Interpreter::Types::NonNegativeInt ();
 BEGIN {
     use Perlox::Interpreter::Types::Token::Type ();
     # Allows us to save some typing when working with TokenTypes
     *TokenType:: = *Perlox::Interpreter::Types::Token::Type::;
 };
+use Readonly qw(Readonly);
+use List::Util qw(any);
 
-use overload
-    '""' => \&_to_string;
+use Class::Tiny qw(type span line value);
 
 Readonly::Hash my %TOKEN_TYPE_TO_STRING => (
     TokenType::LEFT_PAREN => '(',
@@ -75,43 +69,24 @@ Readonly::Hash my %TOKEN_TYPE_TO_STRING => (
     TokenType::EOF => 'eof',
 );
 
-has 'type' => (
-    is => 'ro',
-    isa => 'Perlox::Interpreter::Types::NonNegativeInt',
-    required => 1,
-    writer => '_set_type',
-);
-has 'span' => (
-    is => 'ro',
-    isa => 'Perlox::Interpreter::Types::Span',
-    required => 1,
-    writer => '_set_span',
-);
-has 'value' => (
-    is => 'ro',
-    isa => 'Maybe[Int | Str]',
-    predicate => 'has_value',
-    writer => '_set_value',
-);
-
-sub _to_string {
+use overload '""' => sub {
     my ($self) = @_;
 
-    my $string_representation = $TOKEN_TYPE_TO_STRING{$self->type()};
+    my $string_representation = $TOKEN_TYPE_TO_STRING{$self->type};
     if ($self->type == TokenType::STRING) {
         $string_representation .= ' "' . $self->value . '"';
     } elsif (any { $self->type == $_ } (TokenType::NUMBER, TokenType::IDENTIFIER)) {
         $string_representation .= ' ' . $self->value;
     }
 
-    # FIXME? 
     if (defined($self->span->start) && defined($self->span->end)) {
         $string_representation .= ' ' . $self->span;
     }
+    if (defined($self->line)) {
+        $string_representation .= ' line: ' . $self->line . ' ';
+    }
 
     return $string_representation;
-}
-
-__PACKAGE__->meta->make_immutable;
+};
 
 1;

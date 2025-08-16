@@ -8,8 +8,5 @@ sudo apt install liblib-abs-perl \
     libreadonly-perl \
     libexception-class-perl \
     libterm-readline-gnu-perl \
-    libstrictures-perl \
     libutf8-all-perl \
-    libtype-tiny-perl \
-    libmouse-perl \
-    libmoosex-strictconstructor-perl
+    libclass-tiny-perl

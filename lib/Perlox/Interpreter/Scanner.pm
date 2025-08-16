@@ -12,14 +12,12 @@ package Perlox::Interpreter::Scanner;
 =cut
 
 use v5.24;
-use strictures 2;
+use strict;
+use warnings;
 use utf8;
-use namespace::autoclean;
 use experimental 'signatures';
 use lib::abs '../../';
 
-use Moose;
-use MooseX::StrictConstructor;
 use Syntax::Keyword::Match;
 use Clone qw(clone);
 
@@ -41,6 +39,15 @@ use Perlox::Interpreter::Scanner::Utils qw(
     is_whitespace
 );
 
+use Class::Tiny {
+    _source_code_chars => [],
+    _offset => 0,
+    _line => 1,
+    _tokens => [],
+    _span => Perlox::Interpreter::Types::Span->new(),
+    _errors => [],
+};
+
 Readonly::Hash my %KEYWORDS => (
     and => TokenType::AND,
     class => TokenType::CLASS,
@@ -58,42 +65,6 @@ Readonly::Hash my %KEYWORDS => (
     true => TokenType::TRUE,
     var => TokenType::VAR,
     while =>TokenType::WHILE,
-);
-
-has '_source_code_chars' => (
-    is => 'rw',
-    isa => 'ArrayRef[Str]',
-    default => sub { return []; },
-    init_arg => undef,
-);
-has '_offset' => (
-    is => 'rw',
-    isa => 'Int',
-    default => 0,
-    init_arg => undef,
-);
-has '_line' => (
-    is => 'rw',
-    default => 1,
-    init_arg => undef,
-);
-has '_tokens' => (
-    is => 'rw',
-    isa => 'ArrayRef[Perlox::Interpreter::Types::Token]',
-    default => sub { return []; },
-    init_arg => undef,
-);
-has '_span' => (
-    is => 'rw',
-    isa => 'Perlox::Interpreter::Types::Span',
-    default => sub { return Perlox::Interpreter::Types::Span->new(start => undef, end => undef); },
-    init_arg => undef,
-);
-has '_errors' => (
-    is => 'rw',
-    isa => 'ArrayRef[Perlox::Interpreter::Scanner::Error]',
-    default => sub { return []; },
-    init_arg => undef,
 );
 
 sub init($self) {
@@ -125,8 +96,6 @@ sub get_tokens($self, $source_code) {
             errors => clone($self->_errors),
         );
     }
-
-    $self->_save_current_token(TokenType::EOF);
 
     return clone($self->_tokens);
 }
@@ -300,6 +269,7 @@ sub _save_current_token($self, $token_type) {
             type => $token_type,
             # Such metadata is important, it may be used in the next stages (parsing, for instance)
             span => clone($self->_span),
+            line => $self->_line,
             # It makes sense to store a lexeme value for some token types (string, numbers, identificators)
             defined($value)
                 ? (value => $value) : (),

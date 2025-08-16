@@ -1,7 +1,8 @@
 #!/usr/bin/perl
 
 use v5.24;
-use strictures 2;
+use strict;
+use warnings;
 use utf8::all;
 use lib::abs '../lib/';
 
@@ -18,7 +19,10 @@ Readonly::Hash my %EXIT_CODES => (
     TOO_MANY_ARGUMENTS => 64,
 );
 
-# Without this line colored output won't work correctly
+# Without this line colored output won't work correctly:
+# Term::ReadLine bypasses the STDOUT (it works with the /dev/tty directly or so) when prompting a user
+# for input ($term->readline), so the color('reset') output stays in the buffer longer than needed,
+# which leads to coloring the wrong lines.
 local $| = 1;
 
 my %cli_arguments = (

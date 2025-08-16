@@ -8,19 +8,15 @@ package Perlox::Interpreter;
 =cut
 
 use v5.24;
-use strictures 2;
+use strict;
+use warnings;
 use utf8;
-use namespace::autoclean;
 use experimental 'signatures';
 use lib::abs '../';
-
-use Moose;
-use MooseX::StrictConstructor;
 
 use Syntax::Keyword::Match;
 use Path::Class::File ();
 use Term::ReadLine ();
-use Types::Standard qw(Bool);
 use Readonly qw(Readonly);
 use Try::Tiny qw(try catch);
 
@@ -37,26 +33,13 @@ use Perlox::CLI qw(
     show_error
 );
 
-Readonly::Scalar our $VERSION => '0.1.0';
+use Class::Tiny {
+    verbose => 0,
+    _scanner => Perlox::Interpreter::Scanner->new(),
+    _parser => Perlox::Interpreter::Parser->new(),
+};
 
-has '_scanner' => (
-    is => 'ro',
-    isa => 'Perlox::Interpreter::Scanner',
-    default => sub { return Perlox::Interpreter::Scanner->new(); },
-    init_arg => undef,
-);
-has '_parser' => (
-    is => 'ro',
-    isa => 'Perlox::Interpreter::Parser',
-    default => sub { return Perlox::Interpreter::Parser->new(); },
-    init_arg => undef,
-);
-has 'verbose' => (
-    is => 'rw',
-    isa => Bool,
-    default => 0,
-    reader => 'is_verbose_mode_enabled',
-);
+Readonly::Scalar our $VERSION => '0.1.0';
 
 sub run_from_file($self, $path_to_script) {
     my $script_content;
@@ -78,12 +61,12 @@ sub run_from_string($self, $source_code) {
     try {
         # Make iterator interface for the scanner?
         my $tokens = $self->_scanner->get_tokens($source_code);
-        if ($self->is_verbose_mode_enabled()) {
+        if ($self->verbose()) {
             show_scanner_debug_output($tokens);
         }
 
         my $ast = $self->_parser->parse($tokens);
-        if ($self->is_verbose_mode_enabled()) {
+        if ($self->verbose()) {
             show_parser_debug_output($ast);
         }
 

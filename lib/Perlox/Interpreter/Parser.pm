@@ -9,16 +9,24 @@ package Perlox::Interpreter::Parser;
 =cut
 
 use v5.24;
-use strictures 2;
+use strict;
+use warnings;
 use utf8;
-use namespace::autoclean;
 use experimental 'signatures';
 use lib::abs '../../';
 
-use Moose;
-use MooseX::StrictConstructor;
+use Clone qw(clone);
+use Carp qw(confess);
 use List::Util qw(any);
 
+BEGIN {
+    use Perlox::Interpreter::Types::Token::Type ();
+    # Allows us to save some typing when working with token types
+    *TokenType:: = *Perlox::Interpreter::Types::Token::Type::;
+    use Perlox::Interpreter::Parser::Error::Type ();
+    *ErrorType:: = *Perlox::Interpreter::Parser::Error::Type::;
+};
+use Perlox::Interpreter::Parser::Error ();
 use Perlox::Interpreter::Exceptions ();
 use Perlox::Interpreter::Types::Expression::Literal ();
 use Perlox::Interpreter::Types::Expression::Literal::Boolean ();
@@ -27,33 +35,18 @@ use Perlox::Interpreter::Types::Expression::Literal::String ();
 use Perlox::Interpreter::Types::Expression::Grouping ();
 use Perlox::Interpreter::Types::Expression::Unary ();
 use Perlox::Interpreter::Types::Expression::Binary ();
-BEGIN {
-    use Perlox::Interpreter::Types::Token::Type ();
-    # Allows us to save some typing when working with token types
-    *TokenType:: = *Perlox::Interpreter::Types::Token::Type::;
-};
 
-has '_tokens' => (
-    is => 'rw',
-    isa => 'ArrayRef[Perlox::Interpreter::Types::Token]',
-    default => sub { return []; },
-);
-has '_offset' => (
-    is => 'rw',
-    isa => 'Int',
-    default => 0,
-    init_arg => undef,
-);
-has '_errors' => (
-    is => 'rw',
-    isa => 'ArrayRef[Perlox::Interpreter::Parser::Error]',
-    default => sub { return []; },
-    init_arg => undef,
-);
+use Class::Tiny {
+    _tokens => [],
+    _offset => 0,
+    _last_token => undef,
+    _errors => [],
+};
 
 sub init($self) {
     $self->_tokens([]);
     $self->_offset(0);
+    $self->_last_token(undef);
     $self->_errors([]);
 }
 
@@ -171,31 +164,59 @@ sub _parse_primary($self) {
                 value => $expr,
             );
         } else {
-            # TODO show error
+            $self->_save_error(
+                type => ErrorType::MISSED_CLOSING_PAREN,
+                message => 'Missed closing paren',
+            );
         }
     }
-    say 'ERROR';
+    # TODO error
 }
 
 sub _get_current_token($self) {
-    return $self->_tokens->[$self->_offset];
+    my $current_token = $self->_tokens->[$self->_offset];
+
+    if (defined($current_token)) {
+        $self->_last_token($current_token);
+    }
+    return $current_token;
 }
 
 sub _move_to_next_token($self) {
-    my $next_token = $self->_tokens->[$self->_offset];
+    my $current_token = $self->_tokens->[$self->_offset];
     $self->_offset($self->_offset + 1);
-    return $next_token;
+    return $current_token;
 }
 
 sub _match($self, @token_types) {
-    if (any { $self->_get_current_token()->type == $_ } @token_types) {
+    my $current_token = $self->_get_current_token();
+
+    if (defined($current_token) && any { $current_token->type == $_ } @token_types) {
         return $self->_move_to_next_token();
     }
-    return 0;
+
+    return;
 }
 
 sub _is_eof($self) {
     return $self->_offset >= scalar($self->_tokens->@*);
+}
+
+sub _save_error($self, %args) {
+    if (!defined($self->_last_token)) {
+        confess('$self->_last_token is undef, it must contain the last token, exit');
+    }
+
+    push(
+        $self->_errors->@*,
+        Perlox::Interpreter::Parser::Error->new(
+            type => $args{type},
+            message => $args{message},
+            last_token_span => clone($self->_last_token->span),
+            line => $self->_last_token->line,
+        ),
+    );
+    $self->_last_token(undef);
 }
 
 1;
